@@ -91,12 +91,12 @@ class DataDownloader:
         print("\n__" + region)
 
         # check for data files
-        files = os.listdir(self.folder)
-        if not os.path.isdir(self.folder) or not files:
+        if not os.path.isdir(self.folder) or not os.listdir(self.folder):
             self.download_data()
 
         data = []
         reg = self.regions[region] + ".csv"
+        files = os.listdir(self.folder)
 
         # get files from each year
         for zfile in files:
