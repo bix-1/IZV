@@ -85,8 +85,6 @@ class DataDownloader:
 
 
     def parse_region_data(self, region):
-        print("\n__" + region)
-
         # check for data files
         if not os.path.isdir(self.folder) or not os.listdir(self.folder):
             self.download_data()
@@ -101,16 +99,12 @@ class DataDownloader:
         for zfile in files:
             # get files from specified region
             with zipfile.ZipFile(self.folder + "/" + zfile, "r") as zf:
-                # print(reg, "in", self.folder + "/" + zfile)
                 with zf.open(reg, "r") as f:
                     tmp = list(csv.reader(TextIOWrapper(
                         f, encoding="cp1250"), delimiter=";"))
                     tmp = [tuple(item.replace(",", ".") if item not in [
                         "", "XX", "A:", "B:", "C:", "D:", "E:", "F:", "G:"] else "-1" for item in row) for row in tmp]
                     data += tmp
-
-        print("Retrieved", len(data), "records with",
-              len(data[0]), "attributes")
 
         dt = np.dtype(
             "int, int, int, datetime64[D], int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, str, str, float, float, str, str, str, str, str, str, str, str, str, str, str, str, str, str, str"
@@ -129,7 +123,6 @@ class DataDownloader:
     def get_dict(self, regions=None):
         # data already in memory
         if self.data:
-            print("Returning saved data")
             pass
 
         # fetch data
@@ -143,7 +136,6 @@ class DataDownloader:
                 cache_name = self.folder + "/" + self.cache_filename.format(reg)
                 is_cached = False
                 if os.path.exists(cache_name):
-                    print("Returning cached file for", reg)
                     try:
                         with gzip.open(cache_name, "rb") as cache:
                             tmp = pickle.load(cache)
@@ -165,14 +157,11 @@ class DataDownloader:
                     self.data = tmp
                 else:
                     self.data = {k: np.concatenate(
-                        [self.data[k], tmp[k]]) for k in self.data}
+                        (self.data[k], tmp[k])) for k in self.data}
 
         return self.data
 
 
-
-
-# TODO vypsat zakladni informace pri spusteni python3 download.py (ne pri importu modulu)
 if __name__ == "__main__":
     dd = DataDownloader()
     data = dd.get_dict(["STC", "JHC", "PLK"])
