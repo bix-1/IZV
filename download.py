@@ -9,11 +9,8 @@ import re
 import os
 import csv
 from io import TextIOWrapper
-import time
-
-# Kromě vestavěných knihoven (os, sys, re, requests …) byste si měli vystačit s: gzip, pickle, csv, zipfile, numpy, matplotlib, BeautifulSoup.
-
-# TODO: DOWNLOAD ONLY NECESSARY FILES
+import gzip
+import pickle
 
 
 class DataDownloader:
@@ -99,6 +96,8 @@ class DataDownloader:
         files = os.listdir(self.folder)
 
         # get files from each year
+        p = re.compile(r".*(?<=\d{4})\.zip")
+        files = list(filter(p.match, files))
         for zfile in files:
             # get files from specified region
             with zipfile.ZipFile(self.folder + "/" + zfile, "r") as zf:
@@ -128,29 +127,45 @@ class DataDownloader:
 
 
     def get_dict(self, regions=None):
+        # data already in memory
         if self.data:
             print("Returning saved data")
-            return self.data
+            pass
 
-        elif os.path.exists(self.cache_filename):
-            print("Returning cached file")
-
+        # fetch data
         else:
             self.data = dict()
             if not regions:
                 regions = self.regions.keys()
 
             for reg in regions:
-                if not self.data:
-                    self.data = self.parse_region_data(reg)
-                else:
+                # check for cached data
+                cache_name = self.folder + "/" + self.cache_filename.format(reg)
+                is_cached = False
+                if os.path.exists(cache_name):
+                    print("Returning cached file for", reg)
+                    try:
+                        with gzip.open(cache_name, "rb") as cache:
+                            tmp = pickle.load(cache)
+                            is_cached = True
+                    except:
+                        # invalid cache file --> is_cached is set to False
+                        pass
+
+                # fetch data from files && save to cache
+                if not is_cached:
                     tmp = self.parse_region_data(reg)
-                    self.data = {k: np.concatenate([self.data[k], tmp[k]]) for k in self.data}
 
-            # print("\n\n==========================\nData contains", len(self.data["region"]), "entries\n\n")
+                    # create cache & save data
+                    with gzip.open(cache_name, "wb") as cache:
+                        pickle.dump(tmp, cache)
 
-            # TODO: save to cache
-            # TODO: check regions
+                # append to memory
+                if not self.data:
+                    self.data = tmp
+                else:
+                    self.data = {k: np.concatenate(
+                        [self.data[k], tmp[k]]) for k in self.data}
 
         return self.data
 
@@ -160,7 +175,7 @@ class DataDownloader:
 # TODO vypsat zakladni informace pri spusteni python3 download.py (ne pri importu modulu)
 if __name__ == "__main__":
     dd = DataDownloader()
-    data = dd.get_dict(["PHA", "STC", "JHC"])
+    data = dd.get_dict(["STC", "JHC", "PLK"])
     print("\n\n===================================")
     print("    Data contains", len(data["region"]), "entries\n")
     print("    List of attributes:\n\t\t", [key for key in data])
