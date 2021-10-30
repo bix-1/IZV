@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from typing import DefaultDict, TextIO
+
+# File: download.py
+# Brief: Fetching & pre-processing of data for later analysis
+#
+# Project: Data analysis & visualization of traffic accidents
+#
+# Authors: Jakub Bartko    xbartk07@stud.fit.vutbr.cz
+
+
 import numpy as np
 import zipfile
 import requests
@@ -14,11 +22,23 @@ import pickle
 
 
 class DataDownloader:
-    """ TODO: dokumentacni retezce
+    """
+    Class for data fetching, processing & storing
 
     Attributes:
-        headers    Nazvy hlavicek jednotlivych CSV souboru, tyto nazvy nemente!
-        regions     Dictionary s nazvy kraju : nazev csv souboru
+    -----------
+        headers
+            list of labels of attributes of each entry
+        regions
+            dictionary of region codes: {region code: file code}
+        url
+            url of data storage
+        folder
+            name of folder for storage of tmp files
+        cache_filename
+            filename of cache file with data of corresponding region
+        data:
+            dict containing data in memory: {header: np.array with entries}
     """
 
     headers = ["p1", "p36", "p37", "p2a", "weekday(p2a)", "p2b", "p6", "p7", "p8", "p9", "p10", "p11", "p12", "p13a",
@@ -44,12 +64,26 @@ class DataDownloader:
     }
 
     def __init__(self, url="https://ehw.fit.vutbr.cz/izv/", folder="data", cache_filename="data_{}.pkl.gz"):
+        """
+        Parameters
+        ----------
+        url: str
+            url of data storage
+        folder: str
+            name of folder for storage of tmp files
+        cache_filename: str
+            filename of cache file with data of corresponding region
+        """
         self.url = url
         self.folder = folder
         self.cache_filename = cache_filename
         self.data = dict()
 
     def download_data(self):
+        """
+        Downloads files (if missing) from [self.url] with entries of traffic accidents.
+        Skips all except the most recent files of each year to exclude duplicates.
+        """
         # create dir for data
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
@@ -83,8 +117,21 @@ class DataDownloader:
                     for chunk in r.iter_content(chunk_size=128, decode_unicode=True):
                         fp.write(chunk)
 
-
     def parse_region_data(self, region):
+        """
+        Returns parsed data for given region in dict: {header: np.array}.
+        Downloads data files if missing.
+
+        Parameters
+        ----------
+        region: str
+            region code
+
+        Returns
+        -------
+        dict
+            dictionary representing data entries as {header: np.array(entries)}
+        """
         # check for data files
         if not os.path.isdir(self.folder) or not os.listdir(self.folder):
             self.download_data()
@@ -114,26 +161,37 @@ class DataDownloader:
         # -- convert [2D list] to [np.array] && transpose it for [dictionary]
         data = np.array((np.array(data, dtype=dt).tolist())).T
 
+        # create dict
         result = dict(zip(self.headers, np.array(data)))
         result["region"] = np.full(shape=[len(data.T)], fill_value=region)
 
         return result
 
-
     def get_dict(self, regions=None):
-        # data already in memory
-        if self.data:
-            pass
+        """
+        Returns processed entries for specified regions as dict.
 
-        # fetch data
-        else:
+        Parameters
+        ----------
+        regions: list
+            list of regions to fetch data for; if missing - all regions
+
+        Returns
+        -------
+        dict
+            dictionary of concatenated entries for each specified region
+        """
+
+        # no data in memory --> fetch data
+        if not self.data:
             self.data = dict()
             if not regions:
                 regions = self.regions.keys()
 
             for reg in regions:
                 # check for cached data
-                cache_name = self.folder + "/" + self.cache_filename.format(reg)
+                cache_name = self.folder + "/" + \
+                    self.cache_filename.format(reg)
                 is_cached = False
                 if os.path.exists(cache_name):
                     try:
@@ -165,7 +223,8 @@ class DataDownloader:
 if __name__ == "__main__":
     dd = DataDownloader()
     data = dd.get_dict(["STC", "JHC", "PLK"])
-    print("\n\n===================================")
-    print("    Data contains", len(data["region"]), "entries\n")
-    print("    List of attributes:\n\t\t", [key for key in data])
-    print("\n     List of regions:\n\t\t", np.unique(data["region"]))
+    print("===================================")
+    print("Data contains", len(data["region"]),
+          "entries with", len(data), "attributes")
+    print("\nList of attributes:\n\t\t", [key for key in data])
+    print("\nList of regions:\n\t\t", np.unique(data["region"]))
