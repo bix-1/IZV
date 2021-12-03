@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.9
 # coding=utf-8
+import argparse
 from matplotlib import pyplot as plt
 import pandas as pd
 from pandas.core.series import Series
@@ -23,53 +24,66 @@ new_size=X MB
 Poznámka: zobrazujte na 1 desetinné místo (.1f) a počítejte, že 1 MB = 1e6 B.
 """
 
+
 def print_size(type, df):
     print(type + "_size=" + "{:.1f}".format(
           df.memory_usage(deep=True).sum() / (1024*1024)), "MB")
 
+
 def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
     df = pd.read_pickle(filename)
-    print_size("orig", df)
+    if verbose:
+        print_size("orig", df)
 
-    exclude = ["p1", "d", "e"]
+    exclude = ["p1", "d", "e", "region", "p21"]
     reduce_list = list(set(df.columns) - set(exclude))
     for col in reduce_list:
         df[col] = df[col].astype("category")
 
+    df["p21"] = pd.cut(df["p21"], [-1, 0, 1, 2, 4, 5, 6])
+
     df["date"] = pd.to_datetime(df["p2a"])
 
-    print_size("new", df)
+    if verbose:
+        print_size("new", df)
     return df
-
-# Ukol 2: počty nehod v jednotlivých regionech podle druhu silnic
 
 
 def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
                   show_figure: bool = False):
-    pass
+    # regs = ["VYS", "PAK", "LBK", "KVK"]
+    regs = ["JHM", "MSK", "OLK", "ZLK"]
+
+    data = df.loc[df["region"].isin(regs), ["p21", "region"]]
+
+    g = sns.catplot(data=data, x="region", kind="count",
+                    col="p21", col_wrap=3, palette="flare", height=3)
+    g.set_axis_labels("Region", "Accidents")
+    titles = ["Two-lane road", "Three-lane road", "Four-lane road",
+              "Multi-lane road", "Expressway", "Other road"]
+    for i in range(6):
+        g.axes[i].set_title(titles[i])
+
+    # if show_figure:
+    #     plt.show()
+    if fig_location:
+        plt.savefig(fig_location)
+
 
 # Ukol3: zavinění zvěří
-
-
 def plot_animals(df: pd.DataFrame, fig_location: str = None,
                  show_figure: bool = False):
     pass
 
+
 # Ukol 4: Povětrnostní podmínky
-
-
 def plot_conditions(df: pd.DataFrame, fig_location: str = None,
                     show_figure: bool = False):
     pass
 
 
 if __name__ == "__main__":
-    # zde je ukazka pouziti, tuto cast muzete modifikovat podle libosti
-    # skript nebude pri testovani pousten primo, ale budou volany konkreni ¨
-    # funkce.
-    # tento soubor si stahnete sami, při testování pro hodnocení bude existovat
     df = get_dataframe("accidents.pkl.gz")
-    exit()
     plot_roadtype(df, fig_location="01_roadtype.png", show_figure=True)
-    plot_animals(df, "02_animals.png", True)
-    plot_conditions(df, "03_conditions.png", True)
+    # plot_animals(df, "02_animals.png", True)
+    # plot_conditions(df, "03_conditions.png", True)
