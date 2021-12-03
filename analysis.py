@@ -54,6 +54,7 @@ def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
     df["p21"] = pd.cut(df["p21"], [-1, 0, 1, 2, 4, 5, 6])
     data = df.loc[df["region"].isin(regs), ["p21", "region"]]
 
+    # plotting
     sns.set_theme()
     g = sns.catplot(data=data, x="region", kind="count",
                     col="p21", col_wrap=3, palette="flare", height=3)
@@ -90,8 +91,9 @@ def plot_animals(df: pd.DataFrame, fig_location: str = None,
     df["date"] = df["date"].dt.month
 
     # plotting
+    sns.set_theme()
     g = sns.catplot(data=df, x="date", hue="p10", col="region", kind="count",
-                    hue_order=["animal", "driver", "other"],
+                    hue_order=["animal", "driver", "other"], palette="rocket_r",
                     col_wrap=2, height=3.5, aspect=1.5, sharex=False)
     g.set_ylabels("Accidents")
     g.set_titles("Region: {col_name}")
@@ -119,6 +121,6 @@ def plot_conditions(df: pd.DataFrame, fig_location: str = None,
 
 if __name__ == "__main__":
     df = get_dataframe("accidents.pkl.gz")
-    plot_roadtype(df, fig_location="01_roadtype.png", show_figure=True)
+    # plot_roadtype(df, fig_location="01_roadtype.png", show_figure=True)
     # plot_animals(df, "02_animals.png", True)
-    # plot_conditions(df, "03_conditions.png", True)
+    plot_conditions(df, "03_conditions.png", True)
