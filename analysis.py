@@ -40,8 +40,6 @@ def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
     for col in reduce_list:
         df[col] = df[col].astype("category")
 
-    df["p21"] = pd.cut(df["p21"], [-1, 0, 1, 2, 4, 5, 6])
-
     df["date"] = pd.to_datetime(df["p2a"])
 
     if verbose:
@@ -51,9 +49,9 @@ def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
 
 def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
                   show_figure: bool = False):
-    # regs = ["VYS", "PAK", "LBK", "KVK"]
-    regs = ["JHM", "MSK", "OLK", "ZLK"]
+    regs = ["VYS", "PAK", "LBK", "KVK"]
 
+    df["p21"] = pd.cut(df["p21"], [-1, 0, 1, 2, 4, 5, 6])
     data = df.loc[df["region"].isin(regs), ["p21", "region"]]
 
     g = sns.catplot(data=data, x="region", kind="count",
@@ -64,16 +62,43 @@ def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
     for i in range(6):
         g.axes[i].set_title(titles[i])
 
-    # if show_figure:
-    #     plt.show()
     if fig_location:
         plt.savefig(fig_location)
+    if show_figure:
+        plt.show()
 
 
 # Ukol3: zavinění zvěří
 def plot_animals(df: pd.DataFrame, fig_location: str = None,
                  show_figure: bool = False):
-    pass
+    regs = ["STC", "ULK", "JHM", "VYS"]
+
+    # filter by year & cause; get required columns
+    df = df.loc[(df["date"].dt.year < 2021) &
+                (df["p58"] == 5) &
+                (df["region"].isin(regs)), ["region", "p10", "date"]]
+    # replace categories
+    df["p10"] = df["p10"].map(
+        dict.fromkeys((1, 2), "driver") |
+        {4: "animal"} |
+        dict.fromkeys((-1, 0, 3, 5, 6, 7), "other"))
+    # get month from dates
+    df["date"] = df["date"].dt.month
+
+    # plotting
+    g = sns.catplot(data=df, x="date", hue="p10", col="region", kind="count",
+                    hue_order=["animal", "driver", "other"],
+                    col_wrap=2, height=3.5, aspect=1.5, sharex=False)
+    g.set_ylabels("Accidents")
+    g.set_titles("Region: {col_name}")
+    for x in g.axes:
+        x.set_xlabel("Month")
+
+    # showing / storing figure
+    if fig_location:
+        plt.savefig(fig_location)
+    if show_figure:
+        plt.show()
 
 
 # Ukol 4: Povětrnostní podmínky
@@ -84,6 +109,6 @@ def plot_conditions(df: pd.DataFrame, fig_location: str = None,
 
 if __name__ == "__main__":
     df = get_dataframe("accidents.pkl.gz")
-    plot_roadtype(df, fig_location="01_roadtype.png", show_figure=True)
+    # plot_roadtype(df, fig_location="01_roadtype.png", show_figure=True)
     # plot_animals(df, "02_animals.png", True)
     # plot_conditions(df, "03_conditions.png", True)
