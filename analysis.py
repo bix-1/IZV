@@ -61,6 +61,7 @@ def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
               "Multi-lane road", "Expressway", "Other road"]
     for i in range(6):
         g.axes[i].set_title(titles[i])
+        g.axes[i].set_yscale("log")
 
     if fig_location:
         plt.savefig(fig_location)
