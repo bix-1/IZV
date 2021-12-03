@@ -54,22 +54,25 @@ def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
     df["p21"] = pd.cut(df["p21"], [-1, 0, 1, 2, 4, 5, 6])
     data = df.loc[df["region"].isin(regs), ["p21", "region"]]
 
+    sns.set_theme()
     g = sns.catplot(data=data, x="region", kind="count",
                     col="p21", col_wrap=3, palette="flare", height=3)
     g.set_axis_labels("Region", "Accidents")
     titles = ["Two-lane road", "Three-lane road", "Four-lane road",
               "Multi-lane road", "Expressway", "Other road"]
+
     for i in range(6):
         g.axes[i].set_title(titles[i])
         g.axes[i].set_yscale("log")
 
+
+    # showing / storing figure
     if fig_location:
         plt.savefig(fig_location)
     if show_figure:
         plt.show()
 
 
-# Ukol3: zavinění zvěří
 def plot_animals(df: pd.DataFrame, fig_location: str = None,
                  show_figure: bool = False):
     regs = ["STC", "ULK", "JHM", "VYS"]
@@ -105,11 +108,17 @@ def plot_animals(df: pd.DataFrame, fig_location: str = None,
 # Ukol 4: Povětrnostní podmínky
 def plot_conditions(df: pd.DataFrame, fig_location: str = None,
                     show_figure: bool = False):
-    pass
+
+
+    # showing / storing figure
+    if fig_location:
+        plt.savefig(fig_location)
+    if show_figure:
+        plt.show()
 
 
 if __name__ == "__main__":
     df = get_dataframe("accidents.pkl.gz")
-    # plot_roadtype(df, fig_location="01_roadtype.png", show_figure=True)
+    plot_roadtype(df, fig_location="01_roadtype.png", show_figure=True)
     # plot_animals(df, "02_animals.png", True)
     # plot_conditions(df, "03_conditions.png", True)
