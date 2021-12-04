@@ -1,12 +1,11 @@
 #!/usr/bin/env python3.9
 # coding=utf-8
-import argparse
+from datetime import date
 from matplotlib import pyplot as plt
 import pandas as pd
-from pandas.core.series import Series
 import seaborn as sns
-import numpy as np
 import os
+import matplotlib.dates as mdates
 
 # muzete pridat libovolnou zakladni knihovnu ci knihovnu predstavenou na prednaskach
 # dalsi knihovny pak na dotaz
@@ -35,7 +34,7 @@ def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
     if verbose:
         print_size("orig", df)
 
-    exclude = ["p1", "d", "e", "region", "p21"]
+    exclude = ["p1", "d", "e", "region", "p21", "p2a"]
     reduce_list = list(set(df.columns) - set(exclude))
     for col in reduce_list:
         df[col] = df[col].astype("category")
@@ -66,7 +65,6 @@ def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
         g.axes[i].set_title(titles[i])
         g.axes[i].set_yscale("log")
 
-
     # showing / storing figure
     if fig_location:
         plt.savefig(fig_location)
@@ -79,20 +77,20 @@ def plot_animals(df: pd.DataFrame, fig_location: str = None,
     regs = ["STC", "ULK", "JHM", "VYS"]
 
     # filter by year & cause; get required columns
-    df = df.loc[(df["date"].dt.year < 2021) &
-                (df["p58"] == 5) &
-                (df["region"].isin(regs)), ["region", "p10", "date"]]
+    data = df.loc[(df["date"].dt.year < 2021) &
+                  (df["p58"] == 5) &
+                  (df["region"].isin(regs)), ["region", "p10", "date"]]
     # replace categories
-    df["p10"] = df["p10"].map(
+    data["p10"] = data["p10"].map(
         dict.fromkeys((1, 2), "driver") |
         {4: "animal"} |
         dict.fromkeys((-1, 0, 3, 5, 6, 7), "other"))
     # get month from dates
-    df["date"] = df["date"].dt.month
+    data["date"] = data["date"].dt.month
 
     # plotting
     sns.set_theme()
-    g = sns.catplot(data=df, x="date", hue="p10", col="region", kind="count",
+    g = sns.catplot(data=data, x="date", hue="p10", col="region", kind="count",
                     hue_order=["animal", "driver", "other"], palette="rocket_r",
                     col_wrap=2, height=3.5, aspect=1.5, sharex=False)
     g.set_ylabels("Accidents")
@@ -110,7 +108,42 @@ def plot_animals(df: pd.DataFrame, fig_location: str = None,
 # Ukol 4: Povětrnostní podmínky
 def plot_conditions(df: pd.DataFrame, fig_location: str = None,
                     show_figure: bool = False):
+    regs = ["STC", "ULK", "JHM", "VYS"]
 
+    # filter by wind conds & region; get required columns
+    data = df.loc[(df["p18"] != 0) & (df["region"].isin(regs)),
+                  ["region", "date", "p18"]]
+    # replace values
+    data["p18"] = data["p18"].map({
+        1: "unobstructed",
+        2: "fog",
+        3: "weak rain",
+        4: "rain",
+        5: "snow",
+        6: "frosty road",
+        7: "wind gust",
+    })
+
+    data = pd.pivot_table(
+        data, index=["region", "date"], columns="p18", aggfunc="size")
+    data = data.unstack("region").resample(
+        "M").sum().astype("int").stack("region").reset_index()
+    data = pd.melt(data, id_vars=["region", "date"])
+
+    # plotting
+    sns.set_theme()
+    g = sns.FacetGrid(data, col="region", height=3.5,
+                      aspect=1.5, col_wrap=2, sharex=False)
+    g.map(sns.lineplot, "date", "value", "p18")
+    plt.subplots_adjust(wspace=0.15)
+    g.set_ylabels("Accidents")
+    g.set_xlabels("")
+    g.set_titles("Region: {col_name}")
+    g.add_legend(title="Conditions", borderpad=1.5)
+    g.set(xlim=(date(2016, 1, 1), date(2021, 1, 1)))
+    xformatter = mdates.DateFormatter("%m/%y")
+    for ax in g.axes:
+        ax.xaxis.set_major_formatter(xformatter)
 
     # showing / storing figure
     if fig_location:
