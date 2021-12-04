@@ -4,8 +4,9 @@ from datetime import date
 from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
-import os
 import matplotlib.dates as mdates
+import os
+import sys
 
 
 def print_size(type, df):
@@ -30,6 +31,17 @@ def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
     return df
 
 
+def save_fig(fig_location):
+    try:
+        dir = os.path.dirname(fig_location)
+        if dir and not os.path.exists(dir):
+            os.makedirs(dir)
+        plt.savefig(fig_location)
+    except:
+        print("ERROR: Failed to save figure", fig_location, file=sys.stderr)
+        sys.exit(1)
+
+
 def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
                   show_figure: bool = False):
     regs = ["VYS", "PAK", "LBK", "KVK"]
@@ -52,7 +64,7 @@ def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
 
     # showing / storing figure
     if fig_location:
-        plt.savefig(fig_location)
+        save_fig(fig_location)
     if show_figure:
         plt.show()
 
@@ -87,10 +99,9 @@ def plot_animals(df: pd.DataFrame, fig_location: str = None,
     plt.suptitle("Accidents involving animals")
     plt.subplots_adjust(top=0.88)
 
-
     # showing / storing figure
     if fig_location:
-        plt.savefig(fig_location)
+        save_fig(fig_location)
     if show_figure:
         plt.show()
 
@@ -139,13 +150,13 @@ def plot_conditions(df: pd.DataFrame, fig_location: str = None,
 
     # showing / storing figure
     if fig_location:
-        plt.savefig(fig_location)
+        save_fig(fig_location)
     if show_figure:
         plt.show()
 
 
 if __name__ == "__main__":
     df = get_dataframe("accidents.pkl.gz", verbose=True)
-    plot_roadtype(df, fig_location="01_roadtype.png")
+    plot_roadtype(df, "01_roadtype.png")
     plot_animals(df, "02_animals.png")
     plot_conditions(df, "03_conditions.png")
