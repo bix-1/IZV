@@ -10,11 +10,32 @@ import sys
 
 
 def _print_size(type, df):
+    """
+    Prints memory usage of DataFrame object
+
+    Parameters
+    ----------
+    type: str
+        size type prefix, e.g. {new/old}_size
+
+    df: DataFrame
+        DataFrame object
+    """
+
     print(type + "_size=" + "{:.1f}".format(
           df.memory_usage(deep=True).sum() / (1024*1024)), "MB")
 
 
 def _save_fig(fig_location):
+    """
+    Saves current PyPlot figure to specified location
+
+    Parameters
+    ----------
+    fig_location: str
+        path for figure storing
+    """
+
     try:
         dir = os.path.dirname(fig_location)
         if dir and not os.path.exists(dir):
@@ -26,15 +47,34 @@ def _save_fig(fig_location):
 
 
 def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
+    """
+    Fetches data on accidents in CZ from local file
+
+    Parameters
+    ----------
+    filename: str
+        name of data file
+
+    verbose: bool
+        prints info on memory usage reduction
+
+    Returns
+    -------
+    pandas.DataFrame
+        data frame containing parsed data
+    """
+
+    # fetch data file
     df = pd.read_pickle(filename)
     if verbose:
         _print_size("orig", df)
 
+    # create categories
     exclude = ["p1", "d", "e", "region", "p21", "p2a"]
     reduce_list = list(set(df.columns) - set(exclude))
     for col in reduce_list:
         df[col] = df[col].astype("category")
-
+    # create date
     df["date"] = pd.to_datetime(df["p2a"])
 
     if verbose:
@@ -44,8 +84,23 @@ def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
 
 def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
                   show_figure: bool = False):
-    regs = ["VYS", "PAK", "LBK", "KVK"]
+    """
+    Plots graphs on accidents in regions per road type
 
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        data frame
+
+    fig_location: str
+        path for figure storing
+
+    show_figure: bool
+        show figure after plotting
+    """
+
+    # fetch data
+    regs = ["VYS", "PAK", "LBK", "KVK"]
     df["p21"] = pd.cut(df["p21"], [-1, 0, 1, 2, 4, 5, 6])
     data = df.loc[df["region"].isin(regs), ["p21", "region"]]
 
@@ -71,9 +126,23 @@ def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
 
 def plot_animals(df: pd.DataFrame, fig_location: str = None,
                  show_figure: bool = False):
-    regs = ["STC", "ULK", "JHM", "VYS"]
+    """
+    Plots graphs on accidents involving animals
 
-    # filter by year & cause; get required columns
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        data frame
+
+    fig_location: str
+        path for figure storing
+
+    show_figure: bool
+        show figure after plotting
+    """
+
+    # fetch data -- filter by year, cause, region
+    regs = ["STC", "ULK", "JHM", "VYS"]
     data = df.loc[(df["date"].dt.year < 2021) &
                   (df["p58"] == 5) &
                   (df["region"].isin(regs)), ["region", "p10", "date"]]
@@ -108,9 +177,23 @@ def plot_animals(df: pd.DataFrame, fig_location: str = None,
 
 def plot_conditions(df: pd.DataFrame, fig_location: str = None,
                     show_figure: bool = False):
-    regs = ["STC", "ULK", "JHM", "VYS"]
+    """
+    Plots graphs on accidents per road conditions
 
-    # filter by wind conds & region; get required columns
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        data frame
+
+    fig_location: str
+        path for figure storing
+
+    show_figure: bool
+        show figure after plotting
+    """
+
+    # fetch data -- filter by wind conds & region
+    regs = ["STC", "ULK", "JHM", "VYS"]
     data = df.loc[(df["p18"] != 0) & (df["region"].isin(regs)),
                   ["region", "date", "p18"]]
     # replace values
