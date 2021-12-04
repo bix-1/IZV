@@ -9,15 +9,26 @@ import os
 import sys
 
 
-def print_size(type, df):
+def _print_size(type, df):
     print(type + "_size=" + "{:.1f}".format(
           df.memory_usage(deep=True).sum() / (1024*1024)), "MB")
+
+
+def _save_fig(fig_location):
+    try:
+        dir = os.path.dirname(fig_location)
+        if dir and not os.path.exists(dir):
+            os.makedirs(dir)
+        plt.savefig(fig_location)
+    except:
+        print("ERROR: Failed to save figure", fig_location, file=sys.stderr)
+        sys.exit(1)
 
 
 def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
     df = pd.read_pickle(filename)
     if verbose:
-        print_size("orig", df)
+        _print_size("orig", df)
 
     exclude = ["p1", "d", "e", "region", "p21", "p2a"]
     reduce_list = list(set(df.columns) - set(exclude))
@@ -27,19 +38,8 @@ def get_dataframe(filename: str, verbose: bool = False) -> pd.DataFrame:
     df["date"] = pd.to_datetime(df["p2a"])
 
     if verbose:
-        print_size("new", df)
+        _print_size("new", df)
     return df
-
-
-def save_fig(fig_location):
-    try:
-        dir = os.path.dirname(fig_location)
-        if dir and not os.path.exists(dir):
-            os.makedirs(dir)
-        plt.savefig(fig_location)
-    except:
-        print("ERROR: Failed to save figure", fig_location, file=sys.stderr)
-        sys.exit(1)
 
 
 def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
@@ -64,7 +64,7 @@ def plot_roadtype(df: pd.DataFrame, fig_location: str = None,
 
     # showing / storing figure
     if fig_location:
-        save_fig(fig_location)
+        _save_fig(fig_location)
     if show_figure:
         plt.show()
 
@@ -101,12 +101,11 @@ def plot_animals(df: pd.DataFrame, fig_location: str = None,
 
     # showing / storing figure
     if fig_location:
-        save_fig(fig_location)
+        _save_fig(fig_location)
     if show_figure:
         plt.show()
 
 
-# Ukol 4: Povětrnostní podmínky
 def plot_conditions(df: pd.DataFrame, fig_location: str = None,
                     show_figure: bool = False):
     regs = ["STC", "ULK", "JHM", "VYS"]
@@ -150,7 +149,7 @@ def plot_conditions(df: pd.DataFrame, fig_location: str = None,
 
     # showing / storing figure
     if fig_location:
-        save_fig(fig_location)
+        _save_fig(fig_location)
     if show_figure:
         plt.show()
 
