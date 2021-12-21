@@ -27,23 +27,20 @@ def plot_injuries(df: pd.DataFrame, fig_location: str = None, show_figure: bool 
                  "p13c": "Slightly injured"}, axis="columns", inplace=True)
 
     # plot
+    plt.style.use("ggplot")
     fig, axs = plt.subplots(2, 1, figsize=(12, 8),
                             gridspec_kw={'height_ratios': [2, 1]})
-    # sns.set_theme()
-    # plt.style.use("ggplot")
+    for ax in axs:
+        ax.set_yscale("log")
+        ax.xaxis.label.set_visible(False)
 
     # plot by vehicle type
     dt1 = data.groupby(["p44"]).sum().loc[[
         "car", "truck", "motorcycle", "bus", "train"]]
     dt1.plot.bar(ax=axs[0], rot=0,
                  colormap="autumn", title="Seriousness of accident injuries")
-    axs[0].set_yscale("log")
-    axs[0].xaxis.label.set_visible(False)
-
     # plot total count
     data.value_counts("p44").plot.bar(ax=axs[1], rot=0, color="#6c17bd", title="Accidents by vehicle type")
-    axs[1].set_yscale("log")
-    axs[0].xaxis.label.set_visible(False)
 
     if fig_location:
         fig.savefig(fig_location)
