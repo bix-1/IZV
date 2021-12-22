@@ -5,10 +5,24 @@ import pandas as pd
 
 
 def plot_injuries(df: pd.DataFrame, fig_location: str = None, show_figure: bool = False):
+    """
+    Plot graphs on injuries by vehicle type.
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        data frame
+
+    fig_location: str
+        path for figure storing
+
+    show_location: str
+        show figure after plotting
+    """
+
     # get data
     data = df.loc[(df["p44"] < 9) | (df["p44"] == 16),
                   ["p44", "p13a", "p13b", "p13c"]].copy()
-
     # set vehicle types
     data["p44"] = data["p44"].map(
         dict.fromkeys((0, 1, 2), "motorcycle") |
@@ -20,14 +34,14 @@ def plot_injuries(df: pd.DataFrame, fig_location: str = None, show_figure: bool 
     data.rename({"p13a": "Deaths", "p13b": "Severely injured",
                  "p13c": "Slightly injured"}, axis="columns", inplace=True)
 
-    # plot
+    # init plot
     plt.style.use("ggplot")
     fig, axs = plt.subplots(2, 1, figsize=(8, 8),
                             gridspec_kw={'height_ratios': [3, 2]})
     for ax in axs:
         ax.xaxis.label.set_visible(False)
         ax.tick_params(axis="x", labelsize=14)
-    axs[0].set_yscale("log")
+    plt.tight_layout()
 
     # plot by vehicle type
     dt1 = data.groupby(["p44"]).sum().loc[[
@@ -36,6 +50,7 @@ def plot_injuries(df: pd.DataFrame, fig_location: str = None, show_figure: bool 
                  colormap="autumn", title="Seriousness of injuries")
     axs[0].set_ylabel("accidents")
     axs[0].grid(visible=False, axis="x")
+    axs[0].set_yscale("log")
 
     # plot total count
     plt.style.use("seaborn-dark")
@@ -64,8 +79,6 @@ def plot_injuries(df: pd.DataFrame, fig_location: str = None, show_figure: bool 
              fontsize=14, fontweight="bold", color="#6c17bd")
     plt.plot([xlocs[-1] - 0.18, xlocs[-1]], [0.018, 0], color="#6c17bd", lw=3)
 
-    plt.tight_layout()
-
     # figure storing / showing
     if fig_location:
         fig.savefig(fig_location)
@@ -74,10 +87,22 @@ def plot_injuries(df: pd.DataFrame, fig_location: str = None, show_figure: bool 
 
 
 def plot_table(df: pd.DataFrame, out_location: str = None):
+    """
+    Plot table with data on accidents & injuries by vehicle type.
+    Table is also printed to STDOUT along with additional data of interest.
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        data frame
+
+    out_location: str
+        location for table output
+    """
+
     # get data
     data = df.loc[(df["p44"] < 9) | (df["p44"] == 16),
                   ["p44", "p13a", "p13b", "p13c"]].copy()
-
     # set vehicle types
     data["p44"] = df["p44"].map(
         dict.fromkeys((0, 1, 2), "motorcycle") |
@@ -116,11 +141,13 @@ def plot_table(df: pd.DataFrame, out_location: str = None):
     table["Lives threatened per accident"] = (
         table["Deaths"] + table["Severely injured"]) / table["Accidents"]
 
+    # table output
     pd.set_option("display.max_rows", None, "display.max_columns", None)
     print(table, "\n")
     if out_location:
         table.to_csv(out_location)
 
+    # additional data of interest
     ratio = table.at["bus", "Injured"] / table.at["train", "Injured"]
     print("Trains are responsible for", "{:.0f}x".format(ratio),
           "less injuries than the next safest vehicle - a bus.")
@@ -128,11 +155,13 @@ def plot_table(df: pd.DataFrame, out_location: str = None):
     threats = table["Lives threatened per accident"]
     train_car = threats["train"] / threats["car"]
     car_bike = data_inj["motorcycle"] / data_inj["car"]
-    print("An accident involving train is", "{:.0f}x".format(train_car), "times more likely to cause a life threatening injury than a car.")
-    print("Accidents caused by motorcycles are", "{:.0f}x".format(car_bike), "times more likely to result in an injury than the ones caused by cars.")
+    print("An accident involving train is", "{:.0f}x".format(
+        train_car), "times more likely to cause a life threatening injury than a car.")
+    print("Accidents caused by motorcycles are", "{:.0f}x".format(
+        car_bike), "times more likely to result in an injury than the ones caused by cars.")
 
 
 if __name__ == "__main__":
     df = pd.read_pickle("accidents.pkl.gz")
-    # plot_injuries(df, "injuries.pdf")
+    plot_injuries(df, "injuries.pdf")
     plot_table(df, "data.csv")
