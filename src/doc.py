@@ -118,10 +118,13 @@ def plot_table(df: pd.DataFrame, out_location: str = None):
     table = pd.DataFrame()
     # n of accidents
     table["Accidents"] = data.value_counts("p44").rename_axis('Vehicles')
+
     # % of total
     total_acc = table["Accidents"].sum()
     table["Of total acc."] = (
         table["Accidents"] * 100 / total_acc).map("{:.0f}%".format)
+    # manual fix for better readability
+    table.at["bus", "Of total acc."] = "<2%"
     table.at["train", "Of total acc."] = "<1%"
     # % with injury
     data_inj = data.loc[(data["Deaths"] > 0) | (data["Severely injured"] > 0) | (
@@ -142,10 +145,11 @@ def plot_table(df: pd.DataFrame, out_location: str = None):
         table["Deaths"] + table["Severely injured"]) / table["Accidents"]
 
     # table output
+    pd.options.display.float_format = '{:,.2f}'.format
     pd.set_option("display.max_rows", None, "display.max_columns", None)
     print(table, "\n")
     if out_location:
-        table.to_csv(out_location)
+        table.to_csv(out_location, float_format="%.2f")
 
     # additional data of interest
     ratio = table.at["bus", "Injured"] / table.at["train", "Injured"]
